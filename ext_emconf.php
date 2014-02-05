@@ -11,8 +11,8 @@
 ***************************************************************/
 
 $EM_CONF[$_EXTKEY] = array (
-	'title' => 'LESS Compiling in TYPO3 - The Amazing Way',
-	'description' => 'This extension includes LESS PHP in a way so you can use it anywhere in the frontend like it would be a CSS file.',
+	'title' => 'Handle Page Not Found erorrs',
+	'description' => 'This extension allows to configure specific error pages for each domain.',
 	'category' => 'fe',
 	'author' => 'Benjamin Mack',
 	'author_email' => 'typo3@b13.de',
@@ -29,11 +29,11 @@ $EM_CONF[$_EXTKEY] = array (
 	'clearCacheOnLoad' => 1,
 	'lockType' => '',
 	'author_company' => 'b:dreizehn, Stuttgart',
-	'version' => '1.0.2',
+	'version' => '1.0.0',
 	'constraints' => 
 	array (
 		'depends' => array (
-			'typo3' => '4.5.0-6.1.99'
+			'typo3' => '6.0.0-6.2.99'
 		),
 		'conflicts' => 
 		array (
