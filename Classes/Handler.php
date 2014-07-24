@@ -39,17 +39,48 @@ class Handler {
 	 */
 	public function resolvePageError($parameters, $parentObject) {
 		// resolve the details to the current domain
-		$domainRecord = $parentObject->getDomainDataForPid($parentObject->domainStartPage);
+		if (!$parentObject->sys_page) {
+			$parentObject->sys_page = \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance('TYPO3\\CMS\\Frontend\\Page\\PageRepository');
+		}
 
-		// @todo: check the reason (403 / 404)
+		$domainRecord = $GLOBALS['TYPO3_DB']->exec_SELECTgetSingleRow(
+			'*',
+			'sys_domain',
+			'redirectTo=\'\' AND domainName=' . $GLOBALS['TYPO3_DB']->fullQuoteStr(\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('HTTP_HOST'), 'sys_domain') . $GLOBALS['TSFE']->sys_page->enableFields('sys_domain'),
+			'',
+			'sorting ASC'
+		);
+
+		// check the reason (403 / 404)
+		switch ($parameters['reasonText']) {
+			case 'ID was not an accessible page':
+			case 'Subsection was found and not accessible':
+
+				$targetPage = $domainRecord['tx_amazingpagenotfound_page403'] ?: $parentObject->TYPO3_CONF_VARS['FE']['pageAccessDenied_handling'];
+				$header = $parentObject->TYPO3_CONF_VARS['FE']['pageAccessDenied_handling_statheader'] ?: 'HTTP/1.1 403 Forbidden';
+			break;
+			default:
+
+				$targetPage = $domainRecord['tx_amazingpagenotfound_page404'];
+				$header = $parentObject->TYPO3_CONF_VARS['FE']['pageNotFound_handling_statheader'] ?: 'HTTP/1.0 404 Not Found';
+			break;
+		}
+
+		// nothing configured, use the original handler
+		if (empty($targetPage)) {
+			$parentObject->pageErrorHandler(
+				$parentObject->TYPO3_CONF_VARS['FE']['pageNotFound_handling_original'],
+				$header,
+				$parameters['reasonText']
+			);
+		}
+
+		// send the right header
+		header($header);
 
 		// @todo: resolve the language based on the Domain and realurl
 
-		// send the right header
-		header('HTTP/1.0 404 Not Found');
-
-		// find the page / URL to fetch, based on the 
-		$targetPage = $domainRecord['tx_amazingpagenotfound_page404'];
+		// find the page / URL to fetch, based on the
 		if (is_numeric($targetPage)) {
 			$errorPage = \TYPO3\CMS\Core\Utility\GeneralUtility::locationHeaderUrl('index.php?id=' . $targetPage);
 		} else {
@@ -59,8 +90,8 @@ class Handler {
 		$errorPage = \TYPO3\CMS\Core\Utility\GeneralUtility::getUrl($errorPage);
 		$errorPage = str_replace(
 			array('{currentUrl}', '{reason}'),
-			array($params['currentUrl'], $params['reason'])
-		);
+			array(\TYPO3\CMS\Core\Utility\GeneralUtility::locationHeaderUrl($parameters['currentUrl']), $parameters['reason']),
+		$errorPage);
 
 		echo $errorPage;
 		exit;
